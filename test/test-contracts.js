@@ -82,6 +82,24 @@ describe("CrowBank app", () => {
           .deposit({ value: ethers.utils.parseEther("0.0") })
       ).to.be.revertedWith("Deposit must be more than 0 MATIC");
     });
+
+    describe("timelock", () => {
+      it("should create new Timelock savings account on deposit", async () => {
+        await bank.connect(owner).createSavings({ value: one });
+        const id = await bank.accountToSavings(owner.address);
+        const { amount } = await bank.savings(id);
+
+        expect(await bank.accounts(owner.address)).to.equal(one);
+        expect(amount).to.equal(one);
+      });
+
+      it("should revert on emptySavings() if the timelock has not yet expired", async () => {
+        await bank.connect(address_1).createSavings({ value: three });
+        await expect(
+          bank.connect(address_1).emptySavings(token.address)
+        ).to.be.revertedWith("It is still too early to withdraw!");
+      });
+    });
   });
 
   describe("token contract", () => {
