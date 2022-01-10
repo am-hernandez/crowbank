@@ -3,7 +3,7 @@ import Teller from "./Teller";
 function Home() {
   return (
     <main>
-      <h2>Hello, fren</h2>
+      <h1>Welcom to the bank for crows, fren</h1>
       <Teller />
     </main>
   );
