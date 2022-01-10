@@ -85,10 +85,22 @@ describe("CrowBank app", () => {
   });
 
   describe("token contract", () => {
-    it("mint() should fail when called by any address other than the bank", async () => {
-      await expect(
-        token.connect(bank.signer).mint(owner.address, one)
-      ).to.be.revertedWith("Only the bank can mint new Tokens!");
+    describe("mint()", () => {
+      it("should fail when called by any address other than the bank", async () => {
+        await expect(
+          token.connect(bank.signer).mint(owner.address, one)
+        ).to.be.revertedWith("Only the bank can mint new Tokens!");
+      });
+    });
+
+    describe("NewMint()", () => {
+      it("event should be emitted after user withdraws from bank and new token is minted", async () => {
+        await bank.connect(address_1).deposit({ value: three });
+
+        await expect(bank.connect(address_1).withdraw(three, token.address))
+          .to.emit(token, "NewMint")
+          .withArgs(one);
+      });
     });
   });
 });

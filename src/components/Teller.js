@@ -10,10 +10,10 @@ function Teller() {
     depositAmount: 0,
     withdrawAmount: 0,
   });
-  const [signer, setSigner] = useState(0);
   const [bankTotalAssets, setBankTotalAssets] = useState(0);
   const [userTotalAssets, setUserTotalAssets] = useState(0);
   const [userTotalTokens, setUserTotalTokens] = useState(0);
+  const [newMint, setNewMint] = useState("");
 
   async function requestAccount() {
     await window.ethereum.request({ method: "eth_requestAccounts" });
@@ -26,8 +26,9 @@ function Teller() {
         window.ethereum,
         "any"
       );
-      const signer = provider.getSigner();
-      setSigner(signer);
+      getBankTotalAssets();
+      getUserTotalAssets();
+      getUserTotalTokens();
     }
   }
 
@@ -77,11 +78,15 @@ function Teller() {
           amount,
           addresses.tokencontract
         );
-        await transaction.wait();
+        const receipt = await transaction.wait();
+        const block = await provider.getBlock(receipt.blockNumber);
+        const timestamp = new Date(block.timestamp);
+
         getBankTotalAssets();
         getUserTotalAssets();
         getUserTotalTokens();
         handleChange({ target: { name: "withdrawAmount", value: 0 } });
+        listenForNewMint(provider, timestamp);
       } catch (err) {
         console.error(err);
       }
@@ -156,11 +161,28 @@ function Teller() {
     }
   }
 
+  async function listenForNewMint(provider, timestamp) {
+    const contract = new ethers.Contract(
+      addresses.tokencontract,
+      Token.abi,
+      provider
+    );
+    timestamp = new Date(timestamp.setFullYear(timestamp.getFullYear() + 52));
+    try {
+      contract.on("NewMint", (amount, event) => {
+        setNewMint(
+          `${ethers.utils.formatEther(
+            amount
+          )} new MRDR token minted at ${timestamp.toString().slice(0, 24)}`
+        );
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   useEffect(() => {
-    // setStateVariables();
-    getBankTotalAssets();
-    getUserTotalAssets();
-    getUserTotalTokens();
+    setStateVariables();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -187,7 +209,7 @@ function Teller() {
             </button>
           )}
         </div>
-        <br />
+
         <div id="withdrawContainer">
           <label htmlFor="withdrawAmount">get coin out</label>
           <input
@@ -213,6 +235,7 @@ function Teller() {
       </aside>
       <p>MATIC: {userTotalAssets || 0}</p>
       <p>MRDR: {userTotalTokens || 0}</p>
+      <p id="eventNewMintMessage">{newMint ? newMint + "!" : ""}</p>
     </div>
   );
 }

@@ -42,6 +42,7 @@ button {
 }
 
 main {
+  flex-grow: 1;
   padding: 1em;
 }
 
@@ -58,6 +59,8 @@ main {
 #tellerForm {
   display: flex;
   justify-content: space-around;
+  align-self: center;
+  flex-wrap: wrap;
   background-color: white;
   text-align: center;
 }
@@ -70,6 +73,11 @@ main {
 #withdrawContainer {
   display: flex;
   flex-direction: column;
+}
+
+#eventNewMintMessage {
+  display: inline-block;
+  background-color: #e75151;
 }
 
 footer {

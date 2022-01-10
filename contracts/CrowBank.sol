@@ -8,11 +8,11 @@ contract CrowBank {
 
     constructor() {}
 
-    function totalAssets() view external returns (uint256) {
+    function totalAssets() external view returns (uint256) {
         return address(this).balance;
     }
 
-    function deposit() payable external {
+    function deposit() external payable {
         require(msg.value > 0, "Deposit must be more than 0 MATIC");
         accounts[msg.sender] += msg.value;
     }
@@ -26,7 +26,7 @@ contract CrowBank {
         accounts[msg.sender] -= _amount;
         payable(msg.sender).transfer(_amount);
 
-        Murder yieldToken = Murder(_tokenContract);
-        yieldToken.mint(msg.sender, 1 ether);
+        Murder experienceToken = Murder(_tokenContract);
+        experienceToken.mint(msg.sender, 1 ether);
     }
 }
