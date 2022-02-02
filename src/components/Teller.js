@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useForm } from "../useForm";
+import { useError } from "../useError";
 import { ethers } from "ethers";
 import addresses from "../blockchain/contract-address.json";
 import Bank from "../artifacts/contracts/CrowBank.sol/CrowBank.json";
@@ -13,22 +14,44 @@ function Teller() {
     withdrawAmount: 0,
     timelockAmount: 0,
   });
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errors, handleError] = useError({
+    vaultErr: "",
+    walletErr: "",
+  });
   const [bankTotalAssets, setBankTotalAssets] = useState(0);
   const [userTotalAssets, setUserTotalAssets] = useState(0);
   const [userTotalTokens, setUserTotalTokens] = useState(0);
   const [newMint, setNewMint] = useState("");
 
+  function setError(name, err) {
+    if (err.data) {
+      const regex = /('.*')/g;
+      const messageIndex = err.data.message.search(regex);
+      err.message = err.data.message.slice(messageIndex);
+    }
+    handleError({ name, value: err.message });
+    setTimeout(() => handleError({ name, value: null }), 3000);
+  }
+
   async function requestAccount() {
-    await window.ethereum.request({ method: "eth_requestAccounts" });
+    try {
+      await window.ethereum.request({ method: "eth_requestAccounts" });
+    } catch (err) {
+      console.error(err);
+      setError("walletErr", err);
+    }
   }
 
   async function setStateVariables() {
     if (typeof window.ethereum !== "undefined") {
-      await requestAccount();
-      getBankTotalAssets();
-      getUserTotalAssets();
-      getUserTotalTokens();
+      try {
+        await requestAccount();
+        getBankTotalAssets();
+        getUserTotalAssets();
+        getUserTotalTokens();
+      } catch (err) {
+        console.error(err);
+      }
     }
   }
 
@@ -55,6 +78,7 @@ function Teller() {
         handleChange({ target: { name: "depositAmount", value: 0 } });
       } catch (err) {
         console.error(err);
+        setError("walletErr", err);
       }
     }
   }
@@ -89,13 +113,13 @@ function Teller() {
         listenForNewMint(provider, timestamp);
       } catch (err) {
         console.error(err);
+        setError("walletErr", err);
       }
     }
   }
 
   async function getBankTotalAssets() {
     if (typeof window.ethereum !== "undefined") {
-      await requestAccount();
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const contract = new ethers.Contract(
         addresses.bankcontract,
@@ -108,14 +132,13 @@ function Teller() {
         );
         setBankTotalAssets(totalAssets);
       } catch (err) {
-        console.error("Error: ", err);
+        console.error(err);
       }
     }
   }
 
   async function getUserTotalAssets() {
     if (typeof window.ethereum !== "undefined") {
-      await requestAccount();
       try {
         const provider = new ethers.providers.Web3Provider(
           window.ethereum,
@@ -139,7 +162,6 @@ function Teller() {
 
   async function getUserTotalTokens() {
     if (typeof window.ethereum !== "undefined") {
-      await requestAccount();
       try {
         const provider = new ethers.providers.Web3Provider(
           window.ethereum,
@@ -184,6 +206,7 @@ function Teller() {
         handleChange({ target: { name: "timelockAmount", value: 0 } });
       } catch (err) {
         console.error(err);
+        setError("walletErr", err);
       }
     }
   }
@@ -215,9 +238,7 @@ function Teller() {
         listenForNewMint(provider, timestamp);
       } catch (err) {
         console.error(err);
-        const regex = /('.*')/g;
-        const messageIndex = err.data.message.search(regex);
-        setErrorMessage(err.data.message.slice(messageIndex));
+        setError("vaultErr", err);
       }
     }
   }
@@ -236,6 +257,7 @@ function Teller() {
             amount
           )} new MRDR token minted at ${timestamp.toString().slice(0, 24)}`
         );
+        setTimeout(() => setNewMint(), 3000);
       });
     } catch (err) {
       console.error(err);
@@ -243,6 +265,7 @@ function Teller() {
   }
 
   useEffect(() => {
+    console.log("COMPONENT MOUNTED");
     setStateVariables();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -252,7 +275,8 @@ function Teller() {
       <div id="aumContainer">
         <p id="aumHeading">assets under management:</p>
         <span>
-          {bankTotalAssets || 0} MATIC {bankTotalAssets > 10 ? "🤑" : ""}
+          {bankTotalAssets || 0} MATIC
+          {bankTotalAssets > 10 ? " 🤑" : bankTotalAssets < 1 ? " 😟" : ""}
         </span>
       </div>
       <div id="teller">
@@ -311,11 +335,11 @@ function Teller() {
         </div>
       </div>
 
-      {newMint ? <div id="eventNewMintMessage">{newMint + "! 🎉"}</div> : ""}
-
       <div id="vault">
         <h2>Timelocked Vault 🥚</h2>
-        <h3>Wanna lock up money for a bit? Yes! 🤞</h3>
+        <h3>
+          Wanna lock up money for a bit? Yes! 🤞 (just for a coupla minutes...)
+        </h3>
         <div id="vaultForm">
           <div id="depositVault">
             <input
@@ -343,12 +367,24 @@ function Teller() {
             <button id="vaultWithdrawBtn" onClick={handleEmptySavings}>
               Empty your nest
             </button>
-            {errorMessage ? (
-              <div id="errorMessage">{errorMessage + "⏲️"}</div>
-            ) : (
-              ""
-            )}
           </div>
+          {errors.vaultErr ? (
+            <div className="errorMessage">
+              Vault Error: ⏲️ {errors.vaultErr}
+            </div>
+          ) : (
+            ""
+          )}
+          {newMint ? (
+            <div className="errorMessage">{newMint + "! 🎉"}</div>
+          ) : (
+            ""
+          )}
+          {errors.walletErr ? (
+            <div className="errorMessage">Error: ⚙️ {errors.walletErr}</div>
+          ) : (
+            ""
+          )}
         </div>
       </div>
     </div>
