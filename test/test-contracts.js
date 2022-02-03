@@ -86,18 +86,18 @@ describe("CrowBank app", () => {
     describe("timelock", () => {
       it("should create new Timelock savings account on deposit", async () => {
         await bank.connect(owner).createSavings({ value: one });
-        const id = await bank.accountToSavings(owner.address);
-        const { amount } = await bank.savings(id);
+        const id = await bank.clientToVaults(owner.address);
+        const { amount } = await bank.vaults(id);
 
-        expect(await bank.accounts(owner.address)).to.equal(one);
         expect(amount).to.equal(one);
       });
 
       it("should revert on emptySavings() if the timelock has not yet expired", async () => {
         await bank.connect(address_1).createSavings({ value: three });
+
         await expect(
           bank.connect(address_1).emptySavings(token.address)
-        ).to.be.revertedWith("It is still too early to withdraw!");
+        ).to.be.revertedWith("It is still too early to withdraw from!");
       });
     });
   });
@@ -105,9 +105,9 @@ describe("CrowBank app", () => {
   describe("token contract", () => {
     describe("mint()", () => {
       it("should fail when called by any address other than the bank", async () => {
-        await expect(
-          token.connect(bank.signer).mint(owner.address, one)
-        ).to.be.revertedWith("Only the bank can mint new Tokens!");
+        await expect(token.mint(owner.address, one)).to.be.revertedWith(
+          "Only the bank can mint new Tokens!"
+        );
       });
     });
 

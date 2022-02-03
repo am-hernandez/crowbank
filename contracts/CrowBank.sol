@@ -5,17 +5,18 @@ import "./Murder.sol";
 
 contract CrowBank {
     mapping(address => uint256) public accounts;
+
     uint256 lockTime = 2 minutes;
 
     struct Timelock {
-        address account;
+        address client;
         uint256 amount;
         uint32 readyTime;
     }
 
-    Timelock[] public savings;
+    Timelock[] public vaults;
 
-    mapping(address => uint256) public accountToSavings;
+    mapping(address => uint256) public clientToVaults;
 
     constructor() {}
 
@@ -41,26 +42,33 @@ contract CrowBank {
         experienceToken.mint(msg.sender, 1 ether);
     }
 
-    function _isReady(Timelock storage _savings) internal view returns (bool) {
-        return (_savings.readyTime <= block.timestamp);
+    function _isReady(Timelock storage _vaults) internal view returns (bool) {
+        return (_vaults.readyTime <= block.timestamp);
     }
 
     function createSavings() external payable {
         require(msg.value > 0, "Deposit must be more than 0 MATIC");
-        savings.push(
+        vaults.push(
             Timelock(msg.sender, msg.value, uint32(block.timestamp + lockTime))
         );
-        uint256 savingsId = savings.length - 1;
-        accountToSavings[msg.sender] = savingsId;
-        accounts[msg.sender] += msg.value;
+        uint256 vaultsId = vaults.length - 1;
+        clientToVaults[msg.sender] = vaultsId;
     }
 
     function emptySavings(address _tokenContract) external {
-        uint256 savingsId = accountToSavings[msg.sender];
-        Timelock storage savingsAccount = savings[savingsId];
-        require(_isReady(savingsAccount), "It is still too early to withdraw!");
-        accounts[msg.sender] -= savingsAccount.amount;
-        payable(msg.sender).transfer(savingsAccount.amount);
+        uint256 vaultsId = clientToVaults[msg.sender];
+        Timelock storage vaultsAccount = vaults[vaultsId];
+        require(
+            vaultsAccount.amount > 0,
+            string(abi.encodePacked("This vault is empty.", vaultsId))
+        );
+        uint256 amount = vaultsAccount.amount;
+        require(
+            _isReady(vaultsAccount),
+            "It is still too early to withdraw from!"
+        );
+        vaultsAccount.amount = 0;
+        payable(msg.sender).transfer(amount);
 
         Murder experienceToken = Murder(_tokenContract);
         experienceToken.mint(msg.sender, 10 ether);
