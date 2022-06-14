@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useForm } from "../useForm";
-import { useError } from "../useError";
+import { useForm } from "../utils/useForm";
+import { useError } from "../utils/useError";
 import { ethers } from "ethers";
 import addresses from "../blockchain/contract-address.json";
 import Bank from "../artifacts/contracts/CrowBank.sol/CrowBank.json";
@@ -130,6 +130,7 @@ function Teller() {
         const totalAssets = ethers.utils.formatEther(
           await contract.totalAssets()
         );
+
         setBankTotalAssets(totalAssets);
       } catch (err) {
         console.error(err);
@@ -265,7 +266,6 @@ function Teller() {
   }
 
   useEffect(() => {
-    console.log("COMPONENT MOUNTED");
     setStateVariables();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
