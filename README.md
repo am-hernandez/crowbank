@@ -1,5 +1,7 @@
 # Crow Bank
 
+![CrowBank](https://raw.githubusercontent.com/am-hernandez/crowbank/main/crow-bank.png)
+
 Crow Bank is a decentralized application currently deployed on Polygon's Mumbai Testnet. Users can deposit MATIC, withdraw MATIC, check their balance, and view the bank's total assets. Upon withdrawal, user will receive one Murder(MRDR) token as a reward.
 
 ## Usage
